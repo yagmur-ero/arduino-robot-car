@@ -8,20 +8,19 @@ LiquidCrystal lcd(37, 36, 35, 34, 33, 32);
 #define Motor_L_pwm_pin  9
 #define Motor_R_pwm_pin  10
 
-#define ENC_R_pin  2   // right motor encoder pulse signal, INT4
-#define ENC_L_pin  3   // left motor encoder pulse signal, INT5
+#define ENC_R_pin  2
+#define ENC_L_pin  3
 
-const float pulsesPerCm = 8.2;      // update after calibration
-const float targetDistanceCm = 215; // change this on competition day
+const float pulsesPerCm = 8.2;
+const float targetDistanceCm = 215;
 
-// ---- tuning values ----
-const int   basePwmL = 143;     // left motor base speed
-const int   basePwmR = 150;     // right motor base speed
-const float Kp = 2.0;           // correction strength per pulse of difference
-const int   maxCorrection = 25; // limit so the car never swings hard
-const float wheelRatio = 1.00;  // only change if L == R but car still drifts
-const int   nudgePwm = 160;     // kick strength used to equalize counts after stopping
-const int   nudgeMs = 30;       // kick length in milliseconds
+const int   basePwmL = 143;
+const int   basePwmR = 150;
+const float Kp = 2.0;
+const int   maxCorrection = 25;
+const float wheelRatio = 1.00;
+const int   nudgePwm = 160;
+const int   nudgeMs = 30;
 
 volatile unsigned long pulseCountR = 0;
 volatile unsigned long pulseCountL = 0;
@@ -70,7 +69,6 @@ void setup() {
     unsigned long countR = 0;
 
     while (true) {
-        // Read both counters safely (interrupts off while copying)
         noInterrupts();
         countL = pulseCountL;
         countR = pulseCountR;
@@ -80,7 +78,6 @@ void setup() {
             break;
         }
 
-        // Positive error = left count is ahead, negative = right count is ahead
         float error = (float)countL - wheelRatio * (float)countR;
         int correction = constrain((int)(Kp * error), -maxCorrection, maxCorrection);
 
@@ -90,7 +87,6 @@ void setup() {
         analogWrite(Motor_L_pwm_pin, leftPwm);
         analogWrite(Motor_R_pwm_pin, rightPwm);
 
-        // LCD is slow, so only refresh it a few times per second
         if (millis() - lastLcdUpdate >= 200) {
             lastLcdUpdate = millis();
             showCounts(countL, countR);
@@ -100,9 +96,8 @@ void setup() {
     analogWrite(Motor_L_pwm_pin, 0);
     analogWrite(Motor_R_pwm_pin, 0);
 
-    delay(500);  // let the car coast to a stop before showing final counts
+    delay(500);
 
-    // Final touch: kick the lagging wheel in short bursts until both counts match
     for (int i = 0; i < 30; i++) {
         noInterrupts();
         countL = pulseCountL;
@@ -113,7 +108,6 @@ void setup() {
             break;
         }
 
-        // Short kick on the lagging wheel, then stop and let it settle
         int nudgePin = (countL < countR) ? Motor_R_pwm_pin : Motor_L_pwm_pin;
         analogWrite(nudgePin, nudgePwm);
         delay(nudgeMs);
@@ -131,5 +125,4 @@ void setup() {
 }
 
 void loop() {
-    // nothing — drive-to-distance happens once in setup()
 }
